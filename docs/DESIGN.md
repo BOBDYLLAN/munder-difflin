@@ -27,8 +27,10 @@
 4. **One accent, plus play.** Warm **yellow** is the single CTA color; **sky-blue** highlights
    one phrase per headline; **maroon** is the brand/identity tone. Feature cards each get a
    soft **pastel** block (lilac / peach / mint / tan / rose / sky-soft).
-5. **Product-led.** The hero and the "How" section *show the product* through real captured
-   footage (`webm`/`mp4`) seated inside square, black-bordered windows.
+5. **Product-led.** The hero *shows the product* through real captured footage, seated inside a
+   flat, hairline-bordered window. The "How" section uses hand-built static HTML/CSS/SVG
+   illustrations (the floor graph, MemPalace radial recall, GOD + hive graph) drawn in the
+   warm-paper / neo-brutalist theme — ink-bordered node chips, pastel blocks, mono labels — not video.
 6. **Restraint in motion.** Reveal-on-scroll + a neo-brutalist press on hover (translate +
    shadow grow). On-screen-only video playback. All disabled under `prefers-reduced-motion`.
 
@@ -151,15 +153,17 @@ one step. `:active` collapses it (`2px`). Gives a tactile "physical button" pres
 - **Problem cards (Why):** pastel block + square icon tile + mono H3 + body.
 
 ### Feature card (How)
-- One big `--border-bold` + `--shadow-card` card split 2-up: a **pastel media panel**
-  (`.feat-media`, tints `sky-soft / lilac / peach`) holding the windowed video, and a white
-  `.feat-text` panel with a **numbered label**, mono H3, body, and dark tag chips. Alternates
-  side (`.flip`). Stacks to 1 column < 900px.
+- One flat, hairline-bordered (`1px rgba(27,27,27,.16)`), rounded (`16px`) card split 2-up: a
+  **pastel media panel** (`.feat-media`, tints `sky-soft / lilac / peach`) holding a hand-built
+  `.ill` illustration inside a flat `.win`, and a white `.feat-text` panel with a **numbered
+  label**, mono H3, body, and dark tag chips. Alternates side (`.flip`). Stacks to 1 column < 900px.
 
 ### Window / media frame (`.win`)
-- `--white` body, `--border-bold`, square, `--shadow-card`. Title bar is **dark** (`--ink-band`)
-  with white mono title, three white-outline square dots, and an optional `● live` status.
-- `.media-frame` is an aspect-ratio box (`1600/966` hero, `16/9` how) with `object-fit: cover`.
+- `--white` body, **flat**: `1px solid rgba(27,27,27,.16)`, `border-radius: 12px`, no offset
+  shadow. Title bar is **dark** (`--ink-band`) with white mono title, three square dots, optional
+  `● live` / metric status.
+- The hero uses a `.media-frame` aspect-ratio box (`1600/966`) with captured footage
+  (`object-fit: cover`). The "How" windows hold `.ill` illustrations (`16/11`) instead — see §6.
 
 ### Chips / tags / badges
 - **Hero chip:** white, `--border`, mono uppercase, `--shadow-chip`.
@@ -172,22 +176,28 @@ one step. `:active` collapses it (`2px`). Gives a tactile "physical button" pres
 
 ---
 
-## 6. "How it works" — product footage
+## 6. "How it works" — hand-built illustrations
 
-Hero + the three "How" feature cards use **captured `webm`/`mp4` footage** inside `.win` frames.
-Each `<video>` is `muted loop playsinline`, ships a poster SVG, and **plays only while on
-screen** via an `IntersectionObserver` (threshold ~0.35). Under `prefers-reduced-motion: reduce`
-nothing autoplays; the poster stays.
+The **hero** uses captured `webm`/`mp4` footage (`muted loop playsinline`, poster SVG, plays
+only while on screen via `IntersectionObserver`; nothing autoplays under
+`prefers-reduced-motion`). The **three "How" feature cards no longer use video** — each holds a
+hand-built static HTML/CSS/SVG illustration (`.ill`, `16/11`) inside a flat `.win`, drawn in the
+warm-paper / neo-brutalist theme so it reads as finished product art.
 
-| Slot | Footage | Poster | Panel tint |
+| Slot | Illustration | Panel tint | Accent |
 |---|---|---|---|
-| Hero — the floor | `media/hero.webm` (1600×966) | `media/hero-poster.svg` | — (live badge) |
-| 01 The Simulation | `media/how-agents.webm` (16:9) | `media/how-agents-poster.svg` | `--sky-soft` |
-| 02 The Memory — MemPalace | `media/how-mempalace.webm` (16:9) | `media/how-mempalace-poster.svg` | `--lilac` |
-| 03 The Orchestration — GOD + hive | `media/how-god-hive.webm` (16:9) | `media/how-god-hive-poster.svg` | `--peach` |
+| Hero — the floor | captured footage `media/hero.webm` (1600×966) | — (live badge) | — |
+| 01 The Simulation | desk-grid floor: ink-bordered agent node chips (`.nodet`), SVG `.edge` links, an animated `✉️` traveling desk→desk | `--sky-soft` | `--sky` status dots |
+| 02 The Memory — MemPalace | radial recall: central maroon `.mem-core`, six `.mem-chip` memories on SVG `.mem-edge` spokes, matched ones highlighted (`.hit`, `--lilac` + maroon edge) | `--lilac` | `--maroon` |
+| 03 The Orchestration — GOD + hive | node graph: a `GOD · you` node routing to research/build/review along edges with flowing maroon `.flow-dot`s, plus an `.ap` approvals card (`approve`/`hold`) | `--peach` | `--yellow` GOD, `--mint` approve |
 
-Each `<video>` lists the `webm` source first, then an `mp4` fallback for Safari. The footage's
-own dark backgrounds read like terminal panels inside the light cards.
+**Illustration primitives:** `.nodet` (ink-bordered mono node chip + colored `.av` swatch +
+status dot), `.mem-core` / `.mem-chip` (palace + memory tiles), `.ap` (approvals card), `.lbl`
+(mono caption), and SVG `.edge` / `.mem-edge` connectors. Motion is one or two looping CSS
+`offset-path` flows (the envelope, the GOD flow dots), all disabled under
+`prefers-reduced-motion`. No external images, no video weight — the whole section is pure markup.
+
+The retired `media/how-*.{webm,mp4}` footage stays on disk but is no longer referenced.
 
 ---
 
@@ -242,8 +252,9 @@ CNAME → `munderdiffl.in`.
 |---|---|---|
 | Favicon / brand mark | `./logo-mark.svg` | Used (favicon). Nav/footer mark is a CSS maroon `MD` tile. |
 | Full logo / banner | `./logo.svg`, `./banner.svg` | Available (social). |
-| Product footage (`hero`, `how-*`) | `./media/*.{webm,mp4}` | **Used** — hero + three "How" cards. `webm` first, `mp4` fallback; on-screen-only. |
-| Footage posters | `./media/*-poster.svg` | Used as `<video poster>` + hero `og:image`. |
+| Hero footage | `./media/hero.{webm,mp4}` | **Used** — hero only. `webm` first, `mp4` fallback; on-screen-only. |
+| "How" footage | `./media/how-*.{webm,mp4}` | **Retired** — replaced by hand-built `.ill` illustrations; kept on disk, unreferenced. |
+| Footage posters | `./media/*-poster.svg` | Hero poster used (`<video poster>` + `og:image`); `how-*` posters now unreferenced. |
 
 ---
 
@@ -251,9 +262,9 @@ CNAME → `munderdiffl.in`.
 
 The visual language is intentionally close to **cubicle.run** (a product in the same space).
 Differentiation is carried by: the **maroon** brand tone + `MD` mark, the **GOD / hive /
-MemPalace** narrative, MD's own copy, and the **real pixel-office footage**. Do not copy
-cubicle's section wording or exact palette values verbatim.
+MemPalace** narrative, MD's own copy, the real pixel-office hero footage, and the hand-built
+"How" illustrations. Do not copy cubicle's section wording or exact palette values verbatim.
 
 ---
 
-*Last updated: 2026-05-31. Owner: Munder Difflin / Chaitanya Giri.*
+*Last updated: 2026-06-01. Owner: Munder Difflin / Chaitanya Giri.*
