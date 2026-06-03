@@ -8,7 +8,7 @@ import { toolIcon } from './ToolBubble';
 // trailing-puff tail — the visual shorthand for "thinking". Built to DESIGN.md:
 // integer pixels, hard 1px ink outline, limited palette, no soft shadows.
 //
-// Shares ToolBubble's fade state machine and text truncation so behaviour reads
+// Shares ToolBubble's fade state machine and word-wrapping so behaviour reads
 // consistently; the differences are the look (cloud + tail, light fill) and that
 // it stays put until the action changes (no auto-linger while the agent works).
 
@@ -26,6 +26,13 @@ const FADE_IN_DURATION = 0.15;
 const FADE_OUT_DURATION = 0.3;
 const LINGER_DURATION = 1.2;            // only used when hide() is requested
 const DOTS_CYCLE_SPEED = 0.45;
+// Word-wrap width in the inner (unscaled) space — the inner container renders at
+// RENDER_SCALE, so the on-screen cap is MAX_WIDTH. breakWords splits unbroken
+// tokens (long paths/hashes) that would otherwise still spill past the cloud.
+const WRAP_WIDTH = MAX_WIDTH / RENDER_SCALE - PADDING_X * 2;
+// Hard cap on raw characters so a pathological action string wraps to a few
+// lines instead of a runaway-tall cloud (~4 lines at this width).
+const MAX_CHARS = 160;
 
 type BubbleState = 'hidden' | 'fading-in' | 'visible' | 'lingering' | 'fading-out';
 
@@ -62,7 +69,15 @@ export class ThoughtBubble {
     this.bg = new Graphics();
     this.label = new Text({
       text: '',
-      style: { fontSize: FONT_SIZE, fill: TEXT_COLOR, fontFamily: 'monospace' }
+      style: {
+        fontSize: FONT_SIZE,
+        fill: TEXT_COLOR,
+        fontFamily: 'monospace',
+        align: 'left',
+        wordWrap: true,
+        wordWrapWidth: WRAP_WIDTH,
+        breakWords: true
+      }
     });
     this.label.x = PADDING_X;
     this.label.y = PADDING_Y;
@@ -81,14 +96,12 @@ export class ThoughtBubble {
       this.label.text = '.';
     } else {
       const display = tool ? `${toolIcon(tool)} ${text}` : text;
-      this.label.text = display;
-      const maxTextW = MAX_WIDTH / RENDER_SCALE - PADDING_X * 2;
-      let iterations = 0;
-      let truncated = display;
-      while (truncated.length > 3 && this.label.width > maxTextW && iterations++ < 60) {
-        truncated = truncated.slice(0, -2) + '…';
-        this.label.text = truncated;
-      }
+      // Word-wrap (style.wordWrap) handles the horizontal fit, so the card can no
+      // longer overflow; we only cap the raw length so a very long action wraps to
+      // a few lines rather than a wall of text.
+      this.label.text = display.length > MAX_CHARS
+        ? display.slice(0, MAX_CHARS - 1).trimEnd() + '…'
+        : display;
     }
     this.redraw();
     this.reveal();

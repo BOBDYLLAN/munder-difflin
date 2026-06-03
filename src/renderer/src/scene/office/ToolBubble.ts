@@ -33,6 +33,12 @@ const FADE_IN_DURATION = 0.15;
 const FADE_OUT_DURATION = 0.3;
 const LINGER_DURATION = 2.0;
 const DOTS_CYCLE_SPEED = 0.5;
+// Word-wrap width in the inner (unscaled) space — the inner renders at
+// RENDER_SCALE, so the on-screen cap is MAX_WIDTH. breakWords splits unbroken
+// tokens (long paths/hashes) that would otherwise still spill past the bubble.
+const WRAP_WIDTH = MAX_WIDTH / RENDER_SCALE - PADDING_X * 2;
+// Cap raw chars so a long target wraps to a few lines, not a runaway-tall bubble.
+const MAX_CHARS = 150;
 
 type BubbleState = 'hidden' | 'fading-in' | 'visible' | 'lingering' | 'fading-out';
 
@@ -68,7 +74,15 @@ export class ToolBubble {
     this.bg = new Graphics();
     this.label = new Text({
       text: '',
-      style: { fontSize: FONT_SIZE, fill: TEXT_COLOR, fontFamily: 'monospace' },
+      style: {
+        fontSize: FONT_SIZE,
+        fill: TEXT_COLOR,
+        fontFamily: 'monospace',
+        align: 'left',
+        wordWrap: true,
+        wordWrapWidth: WRAP_WIDTH,
+        breakWords: true,
+      },
     });
     this.label.x = PADDING_X;
     this.label.y = PADDING_Y;
@@ -87,16 +101,11 @@ export class ToolBubble {
       this.label.text = '.';
     } else {
       const displayText = target ? `${icon} ${target}` : icon;
-      this.label.text = displayText;
-      const maxTextW = MAX_WIDTH / RENDER_SCALE - PADDING_X * 2;
-      if (this.label.width > maxTextW) {
-        let truncated = displayText;
-        let iterations = 0;
-        while (truncated.length > 3 && this.label.width > maxTextW && iterations++ < 50) {
-          truncated = truncated.slice(0, -2) + '…';
-          this.label.text = truncated;
-        }
-      }
+      // Word-wrap (style.wordWrap) handles the horizontal fit, so the bubble can no
+      // longer overflow; we only cap the raw length to keep it a few lines tall.
+      this.label.text = displayText.length > MAX_CHARS
+        ? displayText.slice(0, MAX_CHARS - 1).trimEnd() + '…'
+        : displayText;
     }
 
     this.redrawBg();
@@ -108,16 +117,10 @@ export class ToolBubble {
   showText(text: string): void {
     this.isThinking = false;
     const display = text || '…';
-    this.label.text = display;
-    const maxTextW = MAX_WIDTH / RENDER_SCALE - PADDING_X * 2;
-    if (this.label.width > maxTextW) {
-      let truncated = display;
-      let iterations = 0;
-      while (truncated.length > 3 && this.label.width > maxTextW && iterations++ < 60) {
-        truncated = truncated.slice(0, -2) + '…';
-        this.label.text = truncated;
-      }
-    }
+    // Word-wrap handles the horizontal fit; cap raw length to bound the height.
+    this.label.text = display.length > MAX_CHARS
+      ? display.slice(0, MAX_CHARS - 1).trimEnd() + '…'
+      : display;
     this.redrawBg();
     this.reveal();
   }
