@@ -27,7 +27,9 @@ export interface HiveMessage {
 
 export interface HiveRegistry {
   godId: string | null;
-  agents: Record<string, HiveAgentMeta & { status: string; lastSeen: number }>;
+  /** `archived` agents have had their terminal closed — retained + flagged, not
+   *  deleted; only live-PTY agents are 'active'. */
+  agents: Record<string, HiveAgentMeta & { status: string; lastSeen: number; archived?: boolean }>;
 }
 
 /** A message the router just delivered, with its resolved recipient ids. Drives
@@ -219,7 +221,13 @@ const api = {
   // ─── Reset ─────────────────────────────────────────────────────────────────
   /** Wipe all hive data + the memory palace, reset config, and relaunch the app
    *  into onboarding. The process exits, so this promise never resolves. */
-  resetAll: (): Promise<void> => ipcRenderer.invoke('app:resetAll')
+  resetAll: (): Promise<void> => ipcRenderer.invoke('app:resetAll'),
+
+  // ─── Agent lifecycle (archival) ─────────────────────────────────────────────
+  /** Archive/unarchive a hive agent in the registry. Closing a terminal tab
+   *  archives it automatically via pty:kill; this is the explicit primitive. */
+  hiveSetArchived: (id: string, archived: boolean): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke('hive:setArchived', id, archived)
 };
 
 contextBridge.exposeInMainWorld('cth', api);

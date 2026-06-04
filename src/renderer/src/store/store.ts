@@ -61,6 +61,10 @@ export interface Agent {
   /** Michael's prep assistant ("Dwight") — enriches prompts and forwards them to
    *  Michael via the hive. Send-only: never receives inbox/broadcast mail. */
   isAssistant?: boolean;
+  /** True once this agent's terminal was closed. Archived agents are retained
+   *  (in the store's `archivedAgents` list + the hive registry) but flagged and
+   *  kept off the floor; only live-PTY agents are 'active'. */
+  archived?: boolean;
 }
 
 export interface FeedEntry {
@@ -90,6 +94,10 @@ export type GodStatus = 'booting' | 'ready' | 'failed';
 
 interface State {
   agents: Agent[];
+  /** Agents whose terminal was closed — retained + flagged, kept off the active
+   *  roster/floor. The hive registry retains them durably; this mirrors them for
+   *  the renderer's "Archived" view. */
+  archivedAgents: Agent[];
   selectedId: string | null;
   feeds: Record<string, string[]>;
   addAgentOpen: boolean;
@@ -117,6 +125,12 @@ interface State {
   pushFeed: (id: string, line: string) => void;
   addAgent: (agent: Agent) => void;
   removeAgent: (id: string) => void;
+  /** Archive an agent (its terminal was closed): move it from the active roster
+   *  into `archivedAgents` with its PTY cleared. Retained + flagged, NOT deleted. */
+  archiveAgent: (id: string) => void;
+  /** Permanently forget an archived agent (drops the renderer entry only; the
+   *  hive registry keeps its record). */
+  removeArchivedAgent: (id: string) => void;
   /** Park a message for an agent. Returns nothing; the flush loop delivers it. */
   enqueueMessage: (agentId: string, text: string) => void;
   /** Drop a single queued message (user removed it, or it was just delivered). */
@@ -137,6 +151,7 @@ interface State {
 const LS_SIDEBAR_WIDTH = 'cth.sidebarWidth';
 const LS_SIDEBAR_TAB = 'cth.sidebarTab';
 const LS_AGENTS = 'cth.agents';
+const LS_ARCHIVED = 'cth.archivedAgents';
 const LS_SELECTED = 'cth.selectedId';
 const LS_QUEUES = 'cth.messageQueues';
 const LS_ENRICH = 'cth.enrichEnabled';
@@ -169,6 +184,36 @@ function loadPersistedAgents(): Agent[] {
       currentStation: 'desk',
       carrying: undefined,
       recentTextTs: Date.now(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function persistArchived(archived: Agent[]): void {
+  try {
+    const slim: PersistedAgent[] = archived.map(({ recentAssistantText, recentTextTs, blockReason, ...rest }) => {
+      void recentAssistantText; void recentTextTs; void blockReason;
+      return rest;
+    });
+    window.localStorage.setItem(LS_ARCHIVED, JSON.stringify(slim));
+  } catch { /* noop */ }
+}
+
+function loadPersistedArchived(): Agent[] {
+  try {
+    const raw = window.localStorage.getItem(LS_ARCHIVED);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as PersistedAgent[];
+    if (!Array.isArray(parsed)) return [];
+    // Archived agents have no live process — force the flag + clear run-state.
+    return parsed.map((a) => ({
+      ...a,
+      archived: true,
+      status: 'idle',
+      ptyId: undefined,
+      carrying: undefined,
+      currentStation: undefined
     }));
   } catch {
     return [];
@@ -228,6 +273,7 @@ const initialSidebarTab: SidebarTab = (() => {
 })();
 
 const initialAgents = loadPersistedAgents();
+const initialArchivedAgents = loadPersistedArchived();
 const initialSelectedId = loadPersistedSelectedId(initialAgents);
 const initialQueues = loadPersistedQueues();
 const initialEnrichEnabled: boolean = (() => {
@@ -244,6 +290,7 @@ function newQueuedId(): string {
 
 export const useStore = create<State>((set) => ({
   agents: initialAgents,
+  archivedAgents: initialArchivedAgents,
   selectedId: initialSelectedId,
   feeds: {},
   addAgentOpen: false,
@@ -270,9 +317,13 @@ export const useStore = create<State>((set) => ({
   addAgent: (agent) =>
     set((s) => {
       const agents = [...s.agents, agent];
+      // Re-spawning an archived agent un-archives it: an id is active xor archived.
+      const archivedAgents = s.archivedAgents.filter((a) => a.id !== agent.id);
       persistAgents(agents, agent.id);
+      persistArchived(archivedAgents);
       return {
         agents,
+        archivedAgents,
         selectedId: agent.id,
         feeds: { ...s.feeds, [agent.id]: s.feeds[agent.id] ?? [] }
       };
@@ -286,6 +337,37 @@ export const useStore = create<State>((set) => ({
       persistAgents(agents, selectedId);
       if (_queueGone) persistQueues(messageQueues);
       return { agents, feeds, selectedId, messageQueues };
+    }),
+  archiveAgent: (id) =>
+    set((s) => {
+      const target = s.agents.find((a) => a.id === id);
+      if (!target) return s;
+      const agents = s.agents.filter((a) => a.id !== id);
+      // Retain a flagged copy; the PTY is gone, so clear all live run-state.
+      const archivedEntry: Agent = {
+        ...target,
+        archived: true,
+        ptyId: undefined,
+        status: 'idle',
+        action: 'archived',
+        carrying: undefined,
+        currentStation: undefined
+      };
+      const archivedAgents = [...s.archivedAgents.filter((a) => a.id !== id), archivedEntry];
+      const { [id]: _feedGone, ...feeds } = s.feeds;
+      const { [id]: _queueGone, ...messageQueues } = s.messageQueues;
+      const selectedId = s.selectedId === id ? (agents[0]?.id ?? null) : s.selectedId;
+      persistAgents(agents, selectedId);
+      persistArchived(archivedAgents);
+      if (_queueGone) persistQueues(messageQueues);
+      return { agents, archivedAgents, feeds, selectedId, messageQueues };
+    }),
+  removeArchivedAgent: (id) =>
+    set((s) => {
+      if (!s.archivedAgents.some((a) => a.id === id)) return s;
+      const archivedAgents = s.archivedAgents.filter((a) => a.id !== id);
+      persistArchived(archivedAgents);
+      return { archivedAgents };
     }),
   enqueueMessage: (agentId, text) =>
     set((s) => {
