@@ -132,6 +132,24 @@ export interface AgentUsage {
   estimatedCostUsd: number;
 }
 
+/** A GitHub issue, normalized for the renderer (labels/assignees flattened to names). */
+export interface GHIssue {
+  number: number;
+  title: string;
+  body: string;
+  url: string;
+  labels: string[];
+  assignees: string[];
+}
+
+/** A CI (GitHub Actions) workflow run, normalized for the renderer. */
+export interface CIRun {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  url: string;
+}
+
 const api = {
   version: '0.1.0',
 
@@ -275,7 +293,20 @@ const api = {
 
   // ─── Full-text search across hive files (board, tasks, memory) ─────────────
   textSearch: (q: string): Promise<{ ok: boolean; results: Array<{ source: string; excerpt: string }> }> =>
-    ipcRenderer.invoke('hive:textSearch', q)
+    ipcRenderer.invoke('hive:textSearch', q),
+
+  // ─── GitHub issue ingestion (gh CLI) ───────────────────────────────────────
+  /** List up to 30 open issues in the repo at `cwd` via the `gh` CLI. Returns
+   *  `{ ok: false, error }` if `gh` is missing/unauthenticated or `cwd` isn't a repo. */
+  githubIssues: (cwd: string): Promise<{ ok: boolean; issues?: GHIssue[]; error?: string }> =>
+    ipcRenderer.invoke('github:issues', cwd),
+
+  // ─── GitHub CI status watcher (gh CLI) ─────────────────────────────────────
+  /** List up to 5 recent CI (GitHub Actions) runs in the repo at `cwd` via the
+   *  `gh` CLI. Returns `{ ok: false, error }` if `gh` is missing/unauthenticated,
+   *  `cwd` isn't a repo, or the repo has no Actions. */
+  githubCIRuns: (cwd: string): Promise<{ ok: boolean; runs?: CIRun[]; error?: string }> =>
+    ipcRenderer.invoke('github:ciRuns', cwd)
 };
 
 contextBridge.exposeInMainWorld('cth', api);

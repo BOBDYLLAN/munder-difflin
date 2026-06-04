@@ -39,6 +39,24 @@ const INTERVAL_OPTS: { ms: number; label: string }[] = [
   { ms: 604800000, label: 'weekly' }
 ];
 
+/** A GitHub issue as returned by `window.cth.githubIssues` (labels/assignees flattened). */
+interface GHIssue {
+  number: number;
+  title: string;
+  body: string;
+  url: string;
+  labels: string[];
+  assignees: string[];
+}
+
+/** A CI run as returned by `window.cth.githubCIRuns` (GitHub Actions workflow runs). */
+interface CIRun {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  url: string;
+}
+
 const TABS: { key: CCTab; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
   { key: 'terminal', label: 'terminal', icon: 'terminal' },
   { key: 'floor', label: 'floor', icon: 'mcp' },
@@ -181,6 +199,11 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
   const [dispatchTo, setDispatchTo] = useState<string>('broadcast');
   const [dispatchText, setDispatchText] = useState('');
   const [dispatchMsg, setDispatchMsg] = useState<string | null>(null);
+  // ── ISSUES section state ──
+  const [issueRepo, setIssueRepo] = useState<string>('');
+  const [issues, setIssues] = useState<GHIssue[]>([]);
+  const [issuesLoading, setIssuesLoading] = useState(false);
+  const [issuesError, setIssuesError] = useState<string | null>(null);
 
   // ── Scheduled missions (recurring auto-dispatch) ──
   const [missions, setMissions] = useState<ScheduledMission[]>([]);
@@ -254,6 +277,33 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
     setDispatchText('');
     setDispatchMsg(res.ok ? `sent to ${dispatchTo}` : `failed: ${res.error ?? '?'}`);
     setTimeout(() => setDispatchMsg(null), 4000);
+  };
+
+  const fetchIssues = async () => {
+    const repo = issueRepo || repos[0];
+    if (!repo) { setIssuesError('No repo selected.'); return; }
+    setIssuesLoading(true);
+    setIssuesError(null);
+    try {
+      const res = await window.cth.githubIssues(repo);
+      if (res.ok) {
+        setIssues((res.issues ?? []).slice(0, 10));
+      } else {
+        setIssues([]);
+        setIssuesError(res.error ?? 'Failed to fetch issues.');
+      }
+    } catch (e) {
+      setIssues([]);
+      setIssuesError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIssuesLoading(false);
+    }
+  };
+
+  const assignIssue = (issue: GHIssue) => {
+    const body = (issue.body ?? '').slice(0, 200);
+    setDispatchText(`GitHub Issue #${issue.number}: ${issue.title}\n\n${body}\n\nURL: ${issue.url}`);
+    setDispatchTo('broadcast');
   };
 
   return (
@@ -417,6 +467,59 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
           </div>
         ))}
       </Section>
+
+      <Section title="ISSUES">
+        {repos.length === 0 && <Muted>No registered repos.</Muted>}
+        {repos.length > 0 && (
+          <>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+              <Select value={issueRepo || repos[0]} onChange={setIssueRepo}>
+                {repos.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </Select>
+              <PixelButton variant="primary" size="sm" onClick={fetchIssues} disabled={issuesLoading}>
+                {issuesLoading ? 'fetching…' : 'Fetch issues'}
+              </PixelButton>
+            </div>
+            {issuesError && (
+              <div style={{
+                fontSize: 12, color: 'var(--cth-ink-700)', marginBottom: 6,
+                padding: 6, background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
+                wordBreak: 'break-word'
+              }}>{issuesError}</div>
+            )}
+            {!issuesError && !issuesLoading && issues.length === 0 && <Muted>No issues fetched yet.</Muted>}
+            {issues.map((issue) => (
+              <div key={issue.number} style={{
+                display: 'flex', flexDirection: 'column', gap: 4,
+                padding: 6, marginBottom: 6,
+                background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: 'var(--cth-ink-900)', flex: 1, wordBreak: 'break-word' }}>
+                    <strong>#{issue.number}</strong> {issue.title}
+                  </span>
+                  <PixelButton variant="secondary" size="sm" onClick={() => assignIssue(issue)}>
+                    Assign
+                  </PixelButton>
+                </div>
+                {issue.labels.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {issue.labels.map((label) => (
+                      <span key={label} style={{
+                        fontSize: 10, lineHeight: '14px', padding: '0 5px',
+                        background: 'var(--cth-cream-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
+                        color: 'var(--cth-ink-700)'
+                      }}>{label}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </>
+        )}
+      </Section>
     </Scroll>
   );
 }
@@ -555,6 +658,8 @@ function ActivityTab() {
 
   return (
     <Scroll>
+      <CIStatusSection />
+
       <Section title="USAGE (this session)">
         {agents.map((a) => (
           <UsageRow key={a.id} name={a.name} cwd={a.cwd} maxCost={maxCost} onCost={reportCost(a.id)} />
@@ -615,6 +720,125 @@ function UsageRow({ name, cwd, maxCost, onCost }: {
       <span style={{ fontSize: 11, color: 'var(--cth-ink-500)', width: 56, textAlign: 'right' }}>{inK}/{outK}Kt</span>
       <span style={{ fontSize: 11, color: 'var(--cth-ink-700)', width: 52, textAlign: 'right' }}>${cost.toFixed(2)}</span>
     </div>
+  );
+}
+
+// ─── CI status — per-repo latest workflow run, polled every 30s ──────────────
+
+/** Per-repo CI poll result: the latest run plus any error surfaced by the IPC. */
+interface RepoCIState {
+  run: CIRun | null;
+  error: string | null;
+}
+
+/** A run failed if it completed with a non-success conclusion. */
+function ciFailed(run: CIRun): boolean {
+  return run.status === 'completed' && run.conclusion !== null && run.conclusion !== 'success';
+}
+
+/** Status chip: green=success, red=failure, yellow=in_progress/queued. */
+function CIChip({ run }: { run: CIRun }) {
+  let bg = 'var(--cth-lemon)';
+  let label = run.status || 'queued';
+  if (run.status === 'completed') {
+    if (run.conclusion === 'success') { bg = 'var(--cth-mint)'; label = 'success'; }
+    else { bg = 'var(--cth-coral)'; label = run.conclusion || 'failed'; }
+  }
+  return (
+    <span style={{
+      fontSize: 10, lineHeight: '14px', padding: '0 6px', flexShrink: 0,
+      background: bg, boxShadow: 'inset 0 0 0 1px var(--cth-ink-900)', color: 'var(--cth-ink-900)'
+    }}>{label}</span>
+  );
+}
+
+/** Polls `githubCIRuns` for every registered repo every 30s. gh being missing
+ *  or unauthenticated surfaces as a muted per-repo error — never a crash. */
+function CIStatusSection() {
+  const [repos, setRepos] = useState<string[]>([]);
+  const [states, setStates] = useState<Record<string, RepoCIState>>({});
+  const [copied, setCopied] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    window.cth.getConfig().then((c) => setRepos(c.registeredRepos ?? [])).catch(() => { /* noop */ });
+  }, []);
+
+  useEffect(() => {
+    if (repos.length === 0) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const next: Record<string, RepoCIState> = {};
+      for (const repo of repos) {
+        try {
+          const res = await window.cth.githubCIRuns(repo);
+          next[repo] = res.ok
+            ? { run: (res.runs ?? [])[0] ?? null, error: null }
+            : { run: null, error: res.error ?? 'Failed to fetch CI runs.' };
+        } catch (e) {
+          next[repo] = { run: null, error: e instanceof Error ? e.message : String(e) };
+        }
+      }
+      if (!cancelled) setStates(next);
+    };
+    refresh();
+    timer.current = setInterval(refresh, 30000);
+    return () => { cancelled = true; if (timer.current) clearInterval(timer.current); };
+  }, [repos]);
+
+  const copyUrl = async (url: string) => {
+    try {
+      await window.cth.copyToClipboard(url);
+      setCopied(url);
+      setTimeout(() => setCopied((c) => (c === url ? null : c)), 1300);
+    } catch { /* noop */ }
+  };
+
+  if (repos.length === 0) return null;
+
+  return (
+    <Section title="CI STATUS">
+      {repos.map((repo) => {
+        const st = states[repo];
+        const short = repo.split('/').filter(Boolean).pop() || repo;
+        const run = st?.run ?? null;
+        return (
+          <div key={repo} style={{
+            display: 'flex', flexDirection: 'column', gap: 4,
+            padding: 6, marginBottom: 6,
+            background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ flex: 1, fontSize: 12, color: 'var(--cth-ink-900)', wordBreak: 'break-word' }}>{short}</span>
+              {run && <CIChip run={run} />}
+            </div>
+            {run && (
+              <div style={{ fontSize: 11, color: 'var(--cth-ink-500)', wordBreak: 'break-word' }}>
+                {run.name || 'workflow'}
+              </div>
+            )}
+            {!st && <Muted>checking…</Muted>}
+            {st && !run && !st.error && <Muted>No runs yet.</Muted>}
+            {st?.error && (
+              <div style={{ fontSize: 11, color: 'var(--cth-ink-500)', wordBreak: 'break-word' }}>{st.error}</div>
+            )}
+            {run && ciFailed(run) && run.url && (
+              <button
+                onClick={() => copyUrl(run.url)}
+                title="Copy the failing run's URL"
+                style={{
+                  alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4,
+                  padding: '2px 7px 1px', border: 'none', cursor: 'pointer',
+                  background: copied === run.url ? 'var(--cth-mint)' : 'var(--cth-cream-200)',
+                  boxShadow: 'inset 0 0 0 1px var(--cth-ink-700)',
+                  fontFamily: 'var(--cth-font-ui)', fontSize: 11, color: 'var(--cth-ink-900)'
+                }}
+              ><Icon name={copied === run.url ? 'check' : 'code'} /> {copied === run.url ? 'copied' : 'copy run URL'}</button>
+            )}
+          </div>
+        );
+      })}
+    </Section>
   );
 }
 
