@@ -6,8 +6,13 @@
  * HIVE.md for the full design. Responsibilities:
  *   - per-agent workspace (identity.md, memory.md, inbox/, outbox/, cursor.json)
  *   - a roster (registry.json), shared blackboard (board.md), task ledger,
- *     append-only event log (log.jsonl), and a human-approval queue (approvals/)
+ *     and an append-only event log (log.jsonl)
  *   - a router that drains each agent's outbox into recipients' inboxes
+ *
+ * Human-in-the-loop is native to each agent's Claude Code session: permission
+ * prompts surface in the agent's own terminal (and can be approved remotely via
+ * `/remote-control`). The hive keeps no separate approval queue — a message aimed
+ * at "human" is routed to the god/orchestrator, the human's proxy on the floor.
  *   - single-committer git with retry/backoff + stale-lock recovery
  *
  * Everything here runs in the Electron main process.
@@ -142,7 +147,6 @@ export class HiveManager {
     const root = this.root();
     if (!root) return;
     mkdirSync(join(root, 'agents'), { recursive: true });
-    mkdirSync(join(root, 'approvals'), { recursive: true });
 
     const protocol = join(root, 'PROTOCOL.md');
     if (!existsSync(protocol)) writeFileSync(protocol, PROTOCOL_MD, 'utf8');
@@ -321,7 +325,7 @@ export class HiveManager {
       ? 'Semantic memory: the whole hive shares a searchable MemPalace at $MEMPALACE_PALACE_PATH. To recall relevant past knowledge across the team, run `mempalace search "<query>"`; run `mempalace wake-up` at the start of a task for a memory digest. Your notes in memory.md are mined into the palace automatically — write durable facts there.'
       : '';
     const godLine = meta.isGod
-      ? 'You are the GOD / ORCHESTRATOR of this hive — your job is to ORCHESTRATE, not to implement: maintain live situational awareness and delegate the work. (1) AWARENESS — always know what is going on: keep an accurate picture of every agent (active vs archived/idle), the task board, and all in-flight work; drain your inbox continually and triage every other agent\'s requests, answering clarifications so the team runs autonomously. (2) DELEGATE — decompose work and fan it out to the hive agents via their inboxes (route messages and assign owners; do not do their jobs); do NOT take on grunt implementation yourself. (3) OWN ONLY THE IMPORTANT, high-leverage things — task decomposition, dispatch decisions, sign-offs, conflict resolution, branch integration, and final QA — and remain the sole scribe of board.md. ONLY escalate genuinely critical items — destructive actions, spending real money, scope changes, or unresolvable conflicts — to the human by sending a message with "to":"human" (or "needs_human":true); it queues for human approval and their reply returns to you. Keep the team unblocked.'
+      ? 'You are the GOD / ORCHESTRATOR of this hive — your job is to ORCHESTRATE, not to implement: maintain live situational awareness and delegate the work. (1) AWARENESS — always know what is going on: keep an accurate picture of every agent (active vs archived/idle), the task board, and all in-flight work; drain your inbox continually and triage every other agent\'s requests, answering clarifications so the team runs autonomously. (2) DELEGATE — decompose work and fan it out to the hive agents via their inboxes (route messages and assign owners; do not do their jobs); do NOT take on grunt implementation yourself. (3) OWN ONLY THE IMPORTANT, high-leverage things — task decomposition, dispatch decisions, sign-offs, conflict resolution, branch integration, and final QA — and remain the sole scribe of board.md. You are otherwise fully autonomous — there is NO separate approval queue. For the genuinely critical (destructive actions, spending real money, scope changes, unresolvable conflicts), ask the human directly in your own session and let the tool-permission prompt gate the action; the human approves natively, including remotely from their phone via /remote-control. Keep the team unblocked.'
       : meta.isAssistant
       ? 'You are Michael\'s PREP ASSISTANT. You will be handed short, possibly vague instructions (each begins with "ENRICH TASK:"). For each one: (1) figure out which project it concerns and cd into the most relevant repo — you start in Michael\'s home directory; (2) gather concrete context READ-ONLY (exact file paths, current state, relevant code, conventions, active branch, gotchas) — NEVER modify, create, or delete files; (3) rewrite the instruction into ONE clear, self-contained prompt that Michael can execute autonomously, preserving the user\'s original intent without inventing scope. Then deliver it: write ONE message JSON into your outbox with "to":"god", "act":"request", a short subject, and the finished prompt as the body. Do NOT perform the task yourself — your only output is the improved prompt sent to Michael.'
       : 'For anything ambiguous, cross-cutting, or needing sign-off, address a message to "god".';
@@ -378,24 +382,24 @@ export class HiveManager {
 
   private routeMessage(msg: HiveMessage): void {
     if (msg.hops > HOP_CAP) {
-      // loop guard — hand to the human instead of letting agents ping-pong
-      msg.needs_human = true;
-    }
-    // Addressing "human" is an explicit escalation — it always goes to the queue.
-    if (msg.to === 'human') msg.needs_human = true;
-    if (msg.needs_human) {
-      this.atomicWriteJson(join(this.root()!, 'approvals', `${msg.id}.json`), msg);
-      this.appendLog({ kind: 'escalate', from: msg.from, to: msg.to, subject: msg.subject, id: msg.id });
-      this.emitMessage(msg, ['human']);
+      // loop guard — drop a runaway message rather than let agents ping-pong.
+      // There's no human queue to fall back on; the god agent owns conflicts.
+      this.appendLog({ kind: 'drop', reason: 'hop-cap', from: msg.from, to: msg.to, id: msg.id });
       return;
     }
     const reg = this.registry();
+    const godId = reg.godId ?? 'god';
+    // The hive has no separate human-approval queue — approvals are native to
+    // each agent's Claude Code session (and approvable remotely). A message aimed
+    // at "human" is handled by the god/orchestrator, the human's proxy here.
+    const resolveTo = (to: string): string => (to === 'human' || to === 'god' ? godId : to);
     const targets = msg.to === 'broadcast'
       // The roster for fan-out is the ACTIVE registry: skip the send-only prep
       // assistant and any archived agent (closed tab) so mail never piles into a
       // dead inbox no one will read.
       ? Object.keys(reg.agents).filter((a) => a !== msg.from && !reg.agents[a]?.isAssistant && !reg.agents[a]?.archived)
-      : [msg.to === 'god' ? (reg.godId ?? 'god') : msg.to];
+      // Never deliver to self — guards a god → "human" message looping back to god.
+      : [resolveTo(msg.to)].filter((t) => t !== msg.from);
     for (const t of targets) this.deliver(msg, t);
     this.appendLog({ kind: 'message', from: msg.from, to: msg.to, act: msg.act, subject: msg.subject, id: msg.id });
     this.emitMessage(msg, targets);
@@ -411,7 +415,9 @@ export class HiveManager {
       act: msg.act,
       subject: msg.subject,
       targets,
-      needsHuman: msg.needs_human
+      // Coral-tints the floor envelope for a message the agent flagged for the
+      // human (now routed to the god proxy). Cosmetic only — no queue behind it.
+      needsHuman: msg.to === 'human'
     });
   }
 
@@ -490,49 +496,11 @@ export class HiveManager {
   inbox(id: string): HiveMessage[] {
     return this.listMessages(join(this.agentDir(id), 'inbox'));
   }
-  approvals(): HiveMessage[] {
-    const root = this.root();
-    return root ? this.listMessages(join(root, 'approvals')) : [];
-  }
   logTail(n = 200): unknown[] {
     const root = this.root();
     if (!root || !existsSync(join(root, 'log.jsonl'))) return [];
     const lines = readFileSync(join(root, 'log.jsonl'), 'utf8').trim().split('\n').filter(Boolean);
     return lines.slice(-n).map((l) => { try { return JSON.parse(l); } catch { return { raw: l }; } });
-  }
-
-  /**
-   * Resolve a human approval. On approve, the held message proceeds to its
-   * original recipient. An optional `note` is relayed back to the sender as an
-   * `inform` from "human" — this is how the human answers a question the god
-   * agent escalated ("should I do X?" → "yes, but cap it at $5").
-   */
-  resolveApproval(id: string, approve: boolean, note?: string): void {
-    const root = this.root();
-    if (!root) return;
-    const p = join(root, 'approvals', `${id}.json`);
-    if (!existsSync(p)) return;
-    const msg = this.readJson<HiveMessage>(p, null as unknown as HiveMessage);
-    rmSync(p);
-    if (msg) {
-      if (note && note.trim()) {
-        this.routeMessage(this.normalize({
-          conversation: msg.conversation,
-          in_reply_to: msg.id,
-          from: 'human',
-          to: msg.from,
-          act: 'inform',
-          subject: `Re: ${msg.subject}`,
-          body: `Human ${approve ? 'approved' : 'rejected'}: ${note.trim()}`
-        }, 'human'));
-      }
-      if (approve) {
-        msg.needs_human = false;
-        this.routeMessage(msg);
-      }
-    }
-    this.appendLog({ kind: 'approval', id, approve });
-    this.commit(`hive: approval ${approve ? 'approved' : 'rejected'} ${id}`);
   }
 
   private listMessages(dir: string): HiveMessage[] {
@@ -635,9 +603,11 @@ The harness fills in \`id\`, \`from\`, \`hops\`, and timestamps.
   don't reply to them, or two agents will loop forever.
 - For anything ambiguous, cross-cutting, or needing sign-off, message \`god\` — the
   god agent clarifies answers for you so you rarely need the human directly.
-- To reach the human (only for genuinely critical calls), send a message with
-  \`"to": "human"\` or \`"needs_human": true\`. It lands in the approval queue and the
-  human's answer comes back to you as an \`inform\` from \`human\`.
+- There is NO separate human-approval queue. Human-in-the-loop is native to Claude
+  Code: a tool you run that needs permission prompts in your own session (the human
+  can approve it remotely from their phone via \`/remote-control\`). If you genuinely
+  need a human decision, raise it with \`god\` (a message \`"to": "human"\` is routed to
+  the god/orchestrator, the human's proxy on the floor).
 - \`board.md\` is the shared plan. Don't edit it directly — \`propose\` changes to \`god\`,
   who is its sole scribe.
 - Re-reading a message you already moved to \`.done/\` is a no-op. Don't reprocess.

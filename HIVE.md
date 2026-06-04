@@ -42,12 +42,14 @@ stream, retrieval, reflection, and planning.
    `agents/<id>/` directory. Cross-agent delivery happens by the **router**
    (main process) moving messages from a sender's `outbox/` into a recipient's
    `inbox/`. No file is ever written by two processes.
-3. **God-mode autonomy with HITL escalation.** A privileged **god agent** (lives
-   in Michael's room) adjudicates cross-agent traffic. Routine requests
+3. **God-mode autonomy, native HITL.** A privileged **god agent** (lives in
+   Michael's room) adjudicates cross-agent traffic. Routine requests
    (clarifications, data asks, plan tweaks) it resolves itself and the system
-   keeps running fully autonomously. Only **critical** items (destructive ops,
-   spend, scope changes, unresolvable conflicts) land in a `pending_approvals/`
-   queue surfaced in the UI for the human.
+   keeps running fully autonomously. **Critical** items (destructive ops, spend,
+   scope changes, unresolvable conflicts) route to the god, who surfaces them to
+   the human natively in his own Claude Code session — there is no separate
+   approval queue. Tool-permission prompts are the HITL gate, and they're
+   approvable remotely from a phone via `/remote-control`.
 4. **Memory: markdown first.** Per-agent `memory.md` + shared blackboard, with a
    SQLite FTS index when keyword recall isn't enough. A heavyweight vector layer
    (Letta/Mem0/Zep) is *not* needed at 5–15 agents and is architecturally wrong
@@ -71,7 +73,6 @@ hive/
   board.md               # shared blackboard / co-authored plans
   tasks.json             # task ledger (id, assignee, spec, status, result ref)
   log.jsonl              # append-only event feed (drives the UI activity stream)
-  approvals/             # one JSON per item escalated to the human (HITL gate)
   agents/<agentId>/
     identity.md          # who am I, my role, my capabilities  (read at start)
     memory.md            # my long-term memory  (I read at start, append as I learn)
@@ -127,8 +128,8 @@ agent B mid-task needs something from agent C
         ▼
 ┌─────────────────────── main process (the harness) ───────────────────────┐
 │  Router watches every outbox/                                             │
-│    → god adjudication:  routine?  ──yes──► deliver to agents/C/inbox/     │
-│                          critical? ──────► approvals/  (UI asks human)    │
+│    → deliver to agents/C/inbox/   (to:"human" → routed to the god proxy;  │
+│       the god surfaces critical calls natively in its own session)        │
 │    → append to log.jsonl → git commit (single committer, retry+backoff)   │
 └──────────────────────────────────────────────────────────────────────────┘
         │ delivered to C's inbox
@@ -175,10 +176,12 @@ is the primary control surface — tune the prompt, not the code.
   and keep running (guarded by `stop_hook_active` + cursor); hook events stream to
   the renderer to drive avatars.
 - **Phase 2 — God mode** ✅: the god agent auto-spawns into Michael's room
-  (`desk-ceo` reserved); the router escalates `needs_human` / `to:"human"` traffic
-  to the `approvals/` queue; an Electron approvals panel lets the human approve or
-  reject with a note that's relayed back to the asker; idle agents are woken when
-  they hold unread inbox messages.
+  (`desk-ceo` reserved) and, on a fresh spawn, is started with `/remote-control`
+  (best-effort) plus an orientation prompt so it begins running the floor on its
+  own. The router routes `to:"human"` traffic to the god (the human's proxy);
+  there is no separate approval queue — human-in-the-loop is native to each
+  agent's Claude Code session (permission prompts, approvable remotely from a
+  phone). Idle agents are woken when they hold unread inbox messages.
 - **Phase 3 — Semantic memory** ✅ (CLI integration): `memory.ts` wraps the
   **MemPalace CLI** (not MCP, by decision). The harness keeps one shared palace
   under `harnessHome`, points every agent's `MEMPALACE_PALACE_PATH` at it, mines

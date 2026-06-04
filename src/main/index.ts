@@ -410,12 +410,6 @@ ipcMain.handle('hive:tasks', () => hive.tasks());
 ipcMain.handle('hive:log', (_evt, n: unknown) => hive.logTail(typeof n === 'number' ? n : 200));
 ipcMain.handle('hive:memory', (_evt, id: unknown) => (typeof id === 'string' ? hive.memory(id) : ''));
 ipcMain.handle('hive:inbox', (_evt, id: unknown) => (typeof id === 'string' ? hive.inbox(id) : []));
-ipcMain.handle('hive:approvals', () => hive.approvals());
-ipcMain.handle('hive:resolveApproval', (_evt, id: unknown, approve: unknown, note: unknown) => {
-  if (typeof id !== 'string') return { ok: false, error: 'invalid id' };
-  hive.resolveApproval(id, approve === true, typeof note === 'string' ? note : undefined);
-  return { ok: true };
-});
 ipcMain.handle('hive:send', (_evt, partial: Partial<HiveMessage>, from: unknown) => {
   if (!hive.enabled()) return { ok: false, error: 'hive disabled (no harnessHome)' };
   const msg = hive.send(partial ?? {}, typeof from === 'string' ? from : 'system');

@@ -97,7 +97,8 @@ export class HookServer {
 
     // A Notification hook that means "the agent is blocked waiting for the user"
     // (idle prompt) deserves a desktop toast too — distinct from a permission
-    // request, which we leave to the in-app approvals UI.
+    // request, which surfaces natively in the agent's own Claude Code session
+    // (approvable remotely via /remote-control).
     if (
       event === 'Notification' &&
       (p.notification_type === 'idle' ||

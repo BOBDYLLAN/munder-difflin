@@ -7,6 +7,22 @@ const GOD_PTY = `pty-${GOD_ID}`;
 const ASSISTANT_ID = 'assistant';
 const ASSISTANT_PTY = `pty-${ASSISTANT_ID}`;
 
+// How long to let Claude Code's TUI finish booting before we type the first
+// thing into Michael's terminal, and the gap between the remote-control command
+// and the orientation prompt so the slash command settles first.
+const GOD_BOOT_MS = 4000;
+const GOD_STEP_MS = 1800;
+
+// The first thing Michael (god) is told on a fresh spawn — orient him and put
+// him to work running the floor. Kept terse and action-oriented.
+const INITIAL_GOD_PROMPT = [
+  "You're online as Michael, the orchestrator of the hive. Get oriented, then start running the floor:",
+  '1. Read your memory.md and drain every message in your inbox.',
+  '2. Review board.md and the current roster of agents (active vs archived).',
+  '3. Run `mempalace wake-up` for a memory digest if the CLI is available.',
+  'Then begin orchestrating: triage requests, delegate work to the team, and keep everyone unblocked. You are fully autonomous — there is no approval queue, so handle tool-permission prompts in this session yourself (the human can approve them remotely from their phone).'
+].join('\n');
+
 /**
  * Type a line into an agent's Claude Code TUI and actually submit it.
  *
@@ -75,6 +91,7 @@ export function useHive(config: HarnessConfig | null): void {
   useEffect(() => {
     if (!config?.onboardingComplete || !config.harnessHome) return;
     let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
     useStore.getState().setGodStatus('booting');
     const t = setTimeout(async () => {
       if (cancelled) return;
@@ -122,8 +139,22 @@ export function useHive(config: HarnessConfig | null): void {
       };
       useStore.getState().addAgent(god);
       useStore.getState().setGodStatus('ready');
+
+      // Fresh spawn → kick Michael off once his TUI is up. First enable remote
+      // control so the human can approve permission prompts from their phone
+      // (best-effort — a failed/unknown slash command just prints to his terminal
+      // and is harmless), then hand him the orientation prompt to start running
+      // the floor. Restored sessions (the live-PTY branch above) skip this.
+      timers.push(setTimeout(() => {
+        if (cancelled) return;
+        submitToPty(GOD_PTY, '/remote-control').catch(() => { /* best-effort */ });
+        timers.push(setTimeout(() => {
+          if (cancelled) return;
+          submitToPty(GOD_PTY, INITIAL_GOD_PROMPT).catch(() => { /* pty may have died */ });
+        }, GOD_STEP_MS));
+      }, GOD_BOOT_MS));
     }, 1200);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => { cancelled = true; clearTimeout(t); timers.forEach(clearTimeout); };
   }, [config?.onboardingComplete, config?.harnessHome]);
 
   // 1b) Bootstrap Michael's prep assistant ("Dwight") — only after Michael is

@@ -45,8 +45,9 @@ export interface HiveTask {
 }
 
 /** A message the router just delivered, with its resolved recipient ids. Drives
- *  the envelope-handoff animation on the office floor. `targets` is `['human']`
- *  when the message was escalated to the human approval queue. */
+ *  the envelope-handoff animation on the office floor. `needsHuman` is set when
+ *  the sender aimed at "human" (now routed to the god proxy) — cosmetic tint
+ *  only; there is no approval queue. */
 export interface HiveRouteEvent {
   id: string;
   from: string;
@@ -231,9 +232,6 @@ const api = {
   hiveLog: (n?: number): Promise<unknown[]> => ipcRenderer.invoke('hive:log', n ?? 200),
   hiveMemory: (id: string): Promise<string> => ipcRenderer.invoke('hive:memory', id),
   hiveInbox: (id: string): Promise<HiveMessage[]> => ipcRenderer.invoke('hive:inbox', id),
-  hiveApprovals: (): Promise<HiveMessage[]> => ipcRenderer.invoke('hive:approvals'),
-  hiveResolveApproval: (id: string, approve: boolean, note?: string): Promise<{ ok: boolean; error?: string }> =>
-    ipcRenderer.invoke('hive:resolveApproval', id, approve, note),
 
   // ─── Semantic memory (MemPalace CLI) ─────────────────────────────────────
   memoryStatus: (): Promise<MemoryStatus> => ipcRenderer.invoke('hive:memoryStatus'),
