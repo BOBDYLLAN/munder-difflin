@@ -80,7 +80,7 @@
   "mainEntity": [
     { "@type": "Question", "name": "What is a git worktree?", "acceptedAnswer": { "@type": "Answer", "text": "A git worktree is an additional working directory attached to one repository. Each worktree has its own checked-out branch and its own index, but they share the same object store and refs — so you can have several branches checked out at once without cloning the repo multiple times." } },
     { "@type": "Question", "name": "Are git worktrees enough to run parallel Claude Code agents?", "acceptedAnswer": { "@type": "Answer", "text": "For independent tasks on separate branches, often yes — worktrees give each agent its own files so they don't collide. What worktrees don't provide is coordination: shared memory, messaging between agents, or an orchestrator that divides one goal across the team." } },
-    { "@type": "Question", "name": "Can I use worktrees and a hive together?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Worktrees solve workspace isolation; a hive solves coordination. You can run a coordinated hive where each agent works in its own worktree, getting both isolation and shared memory plus messaging. In Munder Difflin v0.2.0 this is built-in — the Git isolation toggle in Add Agent handles it automatically." } }
+    { "@type": "Question", "name": "Can I use worktrees and a hive together?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Worktrees solve workspace isolation; a hive solves coordination. You can run a coordinated hive where each agent works in its own worktree, getting both isolation and shared memory plus messaging. In Munder Difflin v0.1.6 this is built-in — the Git isolation toggle in Add Agent handles it automatically." } }
     
   ]
 }
@@ -258,7 +258,7 @@ team; it’s free and open source.</p>
         
         <div class="qa">
           <p class="q">Can I use worktrees and a hive together?</p>
-          <p class="a">Yes. Worktrees solve workspace isolation; a hive solves coordination. You can run a coordinated hive where each agent works in its own worktree, getting both isolation and shared memory plus messaging. In Munder Difflin v0.2.0 this is built-in — the Git isolation toggle in Add Agent handles it automatically.</p>
+          <p class="a">Yes. Worktrees solve workspace isolation; a hive solves coordination. You can run a coordinated hive where each agent works in its own worktree, getting both isolation and shared memory plus messaging. In Munder Difflin v0.1.6 this is built-in — the Git isolation toggle in Add Agent handles it automatically.</p>
         </div>
         
       </section>

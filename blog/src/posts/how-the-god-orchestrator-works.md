@@ -164,7 +164,7 @@ single-writer and single-committer principles the orchestrator depends on.
 
 ## The orchestrator's interface
 
-In v0.2.0, Michael's interface expands significantly. His sidebar becomes a full Command Center: a
+In v0.1.6, Michael's interface expands significantly. His sidebar becomes a full Command Center: a
 Tasks tab gives him a kanban board to track work across agents with dependency links; a Schedules tab
 lets you pre-program recurring directives so the floor stays active between your check-ins; an Activity
 tab shows real token and dollar cost per agent drawn from transcript files; and a GitHub Issues section
