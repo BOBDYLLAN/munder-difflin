@@ -320,6 +320,14 @@
     <summary>A grounded June 2026 roundup of agentic AI: Claude Opus 4.8, the MCP and A2A protocol layer, usage-based agent billing, and agent governance.</summary>
   </entry>
   <entry>
+    <title>When Do AI Agents Actually Need an Agent Protocol?</title>
+    <link href="https://munderdiffl.in/blog/when-do-agents-need-an-agent-protocol/" />
+    <id>https://munderdiffl.in/blog/when-do-agents-need-an-agent-protocol/</id>
+    <published>2026-06-04T00:00:00.000Z</published>
+    <updated>2026-06-04T00:00:00.000Z</updated><category term="Concepts" />
+    <summary>When do AI agents need a protocol like MCP or A2A? Agents you own coordinate fine with file mailboxes; protocols earn their keep across boundaries.</summary>
+  </entry>
+  <entry>
     <title>Building a Terminal UI with xterm.js and node-pty</title>
     <link href="https://munderdiffl.in/blog/building-a-terminal-ui-xterm-node-pty/" />
     <id>https://munderdiffl.in/blog/building-a-terminal-ui-xterm-node-pty/</id>
@@ -478,13 +486,5 @@
     <published>2026-06-02T00:00:00.000Z</published>
     <updated>2026-06-02T00:00:00.000Z</updated><category term="Use Cases" />
     <summary>The control, privacy, and cost case for keeping your AI agents and their memory on your own machine — and what cloud orchestration quietly costs.</summary>
-  </entry>
-  <entry>
-    <title>Why We Built Munder Difflin</title>
-    <link href="https://munderdiffl.in/blog/why-we-built-munder-difflin/" />
-    <id>https://munderdiffl.in/blog/why-we-built-munder-difflin/</id>
-    <published>2026-06-02T00:00:00.000Z</published>
-    <updated>2026-06-02T00:00:00.000Z</updated><category term="Story" />
-    <summary>The origin story of Munder Difflin — how the pain of juggling Claude Code terminals led to a coordinated, memory-backed hive of agents you can watch.</summary>
   </entry>
 </feed>
