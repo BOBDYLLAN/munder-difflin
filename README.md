@@ -115,7 +115,7 @@ terminal/event plane, and [`DESIGN.md`](./DESIGN.md) for the visual system.
 | **Agent archival** | Closing an agent tab archives it (memory + history preserved) rather than destroying it. |
 
 > [!NOTE]
-> **Status: v0.1.6 — full-featured local harness.** The hook plane, office floor, hive coordination, git isolation, token telemetry, task kanban, scheduled missions, GitHub/CI integration, threaded conversations, desktop notifications, and agent archival are all functional and shipping. macOS (signed), Windows, and Linux builds are available on the releases page.
+> **Status: v0.1.7 — full-featured local harness.** The hook plane, office floor, hive coordination, git isolation, token telemetry, task kanban, scheduled missions, GitHub/CI integration, threaded conversations, desktop notifications, agent archival, a Slack→queue bridge, and native human-in-the-loop approvals are all functional and shipping. macOS (signed), Windows, and Linux builds are available on the releases page.
 
 ## Getting started
 
