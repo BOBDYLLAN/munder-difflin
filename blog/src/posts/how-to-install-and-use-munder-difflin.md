@@ -151,12 +151,16 @@ Click **Add agent** to open the spawn dialog. The fields:
 - **Name** — the agent's handle (picking a character fills this in for you).
 - **Folder** — the working directory. Pick one of your registered repos with a click, or browse to
   another.
-- **Command** — defaults to `claude` (plus the `--permission-mode bypassPermissions` flag when auto
-  mode is on). Edit it to drop the flag or run a different command.
+- **Command** — defaults to `claude` (plus `--permission-mode bypassPermissions` in auto mode). Pick a
+  **model** above (Sonnet, Opus, Haiku, or CLI default) — the harness restarts the agent on the new
+  model if you change it later.
 - **Description** — a short note on what this agent is for.
 - **Goal (optional)** — *a long-running directive injected on every prompt.* This is the most
   important field for long tasks (more below).
 - **Character & Color** — pick from the office cast and an accent.
+- **Git isolation (optional)** — checking 'Git isolation (own worktree)' auto-creates a dedicated git
+  checkout for this agent and tears it down when you kill it. Use this whenever two agents share the
+  same repo so they work on separate branches without colliding.
 
 Hit **spawn**. The agent appears as an avatar at a desk, provisioned in the hive with its own memory,
 mailbox, and identity. You'll see it walk to a station and start working; envelopes fly desk-to-desk
@@ -184,12 +188,36 @@ the practical guardrails behind it are in [Claude Code automation while you
 sleep](/blog/claude-code-automation-while-you-sleep/). Be honest with yourself about scope — bounded,
 well-specified jobs go best.
 
+## Step 8: Use Michael's Command Center
+
+Select Michael on the floor and open his panel — it's not a plain terminal. It's a control surface
+with six tabs:
+
+- **Terminal** — Michael's live session, plus a message queue so you can park tasks while he's working.
+- **Floor** — the full agent roster with per-agent model selectors, a dispatch box (send a task to one
+  agent or broadcast to all), and your registered repos. The **Enrich** toggle routes your queued
+  messages through Dwight — a background prep assistant who gathers context and rewrites the prompt
+  before Michael sees it.
+- **Memory** — MemPalace semantic search plus full-text search across all hive files (board, tasks,
+  agent memories) and a memory graph.
+- **Activity** — live event log, the shared board, and real token + cost telemetry per agent (read
+  directly from your Claude Code transcript files).
+- **Tasks** — a dependency-aware kanban board. Add tasks with assignees, priorities, and `dependsOn`
+  links; Michael and his team track status here.
+- **Schedules** — recurring missions. Set a label, interval (1h / 6h / 24h / weekly), and a directive
+  body; the harness dispatches it to the target agent automatically, no human needed.
+
+For long-running floors, the Schedules tab is the most powerful: set a '30-minute floor check' mission
+pointing at Michael with a directive like 'Are all agents making progress? Re-engage anyone idle.' —
+and the harness keeps the team moving even when you're away.
+
 ## Tips for best results
 
 - **Scope beats ambition.** A precise Goal ("do X, in this order, with this definition of done") runs
   longer and cleaner than a vague one.
-- **Use branch-isolated working copies.** Auto mode plus a throwaway branch or worktree means mistakes
-  are cheap to discard.
+- **Use branch-isolated working copies.** Auto mode plus a throwaway branch is cheap to discard — and
+  the 'Git isolation' checkbox in Add Agent automates this: each agent gets its own worktree
+  provisioned and torn down for you.
 - **Register your repos.** Pre-adding projects in onboarding (or later) makes spawning agents one
   click instead of a folder hunt.
 - **Lean on memory.** Tell agents to write durable facts to their notes; the shared semantic palace

@@ -128,7 +128,7 @@
       <span class="dot" aria-hidden="true">·</span>
       <time datetime="2026-06-05">Jun 5, 2026</time>
       <span class="dot" aria-hidden="true">·</span>
-      <span>7 min read</span>
+      <span>9 min read</span>
       <span class="tag kind">Guides</span>
     </div>
   </header>
@@ -250,12 +250,16 @@ changes) for your sign-off, so unattended doesn’t mean unsupervised.</p>
 <li><strong>Name</strong> — the agent’s handle (picking a character fills this in for you).</li>
 <li><strong>Folder</strong> — the working directory. Pick one of your registered repos with a click, or browse to
 another.</li>
-<li><strong>Command</strong> — defaults to <code>claude</code> (plus the <code>--permission-mode bypassPermissions</code> flag when auto
-mode is on). Edit it to drop the flag or run a different command.</li>
+<li><strong>Command</strong> — defaults to <code>claude</code> (plus <code>--permission-mode bypassPermissions</code> in auto mode). Pick a
+<strong>model</strong> above (Sonnet, Opus, Haiku, or CLI default) — the harness restarts the agent on the new
+model if you change it later.</li>
 <li><strong>Description</strong> — a short note on what this agent is for.</li>
 <li><strong>Goal (optional)</strong> — <em>a long-running directive injected on every prompt.</em> This is the most
 important field for long tasks (more below).</li>
 <li><strong>Character &amp; Color</strong> — pick from the office cast and an accent.</li>
+<li><strong>Git isolation (optional)</strong> — checking ‘Git isolation (own worktree)’ auto-creates a dedicated git
+checkout for this agent and tears it down when you kill it. Use this whenever two agents share the
+same repo so they work on separate branches without colliding.</li>
 </ul>
 <p>Hit <strong>spawn</strong>. The agent appears as an avatar at a desk, provisioned in the hive with its own memory,
 mailbox, and identity. You’ll see it walk to a station and start working; envelopes fly desk-to-desk
@@ -280,12 +284,34 @@ you’re back; the GOD agent only interrupts you for the critical calls.</li>
 the practical guardrails behind it are in <a href="/blog/claude-code-automation-while-you-sleep/">Claude Code automation while you
 sleep</a>. Be honest with yourself about scope — bounded,
 well-specified jobs go best.</p>
+<h2 id="step-8-use-michaels-command-center" tabindex="-1">Step 8: Use Michael’s Command Center <a class="anchor" href="#step-8-use-michaels-command-center" aria-hidden="true">#</a></h2>
+<p>Select Michael on the floor and open his panel — it’s not a plain terminal. It’s a control surface
+with six tabs:</p>
+<ul>
+<li><strong>Terminal</strong> — Michael’s live session, plus a message queue so you can park tasks while he’s working.</li>
+<li><strong>Floor</strong> — the full agent roster with per-agent model selectors, a dispatch box (send a task to one
+agent or broadcast to all), and your registered repos. The <strong>Enrich</strong> toggle routes your queued
+messages through Dwight — a background prep assistant who gathers context and rewrites the prompt
+before Michael sees it.</li>
+<li><strong>Memory</strong> — MemPalace semantic search plus full-text search across all hive files (board, tasks,
+agent memories) and a memory graph.</li>
+<li><strong>Activity</strong> — live event log, the shared board, and real token + cost telemetry per agent (read
+directly from your Claude Code transcript files).</li>
+<li><strong>Tasks</strong> — a dependency-aware kanban board. Add tasks with assignees, priorities, and <code>dependsOn</code>
+links; Michael and his team track status here.</li>
+<li><strong>Schedules</strong> — recurring missions. Set a label, interval (1h / 6h / 24h / weekly), and a directive
+body; the harness dispatches it to the target agent automatically, no human needed.</li>
+</ul>
+<p>For long-running floors, the Schedules tab is the most powerful: set a ‘30-minute floor check’ mission
+pointing at Michael with a directive like ‘Are all agents making progress? Re-engage anyone idle.’ —
+and the harness keeps the team moving even when you’re away.</p>
 <h2 id="tips-for-best-results" tabindex="-1">Tips for best results <a class="anchor" href="#tips-for-best-results" aria-hidden="true">#</a></h2>
 <ul>
 <li><strong>Scope beats ambition.</strong> A precise Goal (“do X, in this order, with this definition of done”) runs
 longer and cleaner than a vague one.</li>
-<li><strong>Use branch-isolated working copies.</strong> Auto mode plus a throwaway branch or worktree means mistakes
-are cheap to discard.</li>
+<li><strong>Use branch-isolated working copies.</strong> Auto mode plus a throwaway branch is cheap to discard — and
+the ‘Git isolation’ checkbox in Add Agent automates this: each agent gets its own worktree
+provisioned and torn down for you.</li>
 <li><strong>Register your repos.</strong> Pre-adding projects in onboarding (or later) makes spawning agents one
 click instead of a folder hunt.</li>
 <li><strong>Lean on memory.</strong> Tell agents to write durable facts to their notes; the shared semantic palace
@@ -364,7 +390,7 @@ task.</p>
     <aside class="toc-rail" aria-label="Table of contents">
       <div class="tt">On this page</div>
       <ol>
-        <li class="lvl-2"><a href="#what-munder-difflin-does-best">What Munder Difflin does best</a></li><li class="lvl-2"><a href="#step-1-what-youll-need">Step 1: What you’ll need</a></li><li class="lvl-2"><a href="#step-2-install-it">Step 2: Install it</a></li><li class="lvl-3"><a href="#option-a-download-a-build-easiest">Option A — Download a build (easiest)</a></li><li class="lvl-3"><a href="#option-b-build-from-source-two-commands">Option B — Build from source (two commands)</a></li><li class="lvl-2"><a href="#step-3-first-launch-the-onboarding-wizard">Step 3: First launch — the onboarding wizard</a></li><li class="lvl-2"><a href="#step-4-meet-michael-your-god-orchestrator">Step 4: Meet Michael, your GOD orchestrator</a></li><li class="lvl-2"><a href="#step-5-understand-auto-mode">Step 5: Understand auto mode</a></li><li class="lvl-2"><a href="#step-6-spin-up-your-first-agent">Step 6: Spin up your first agent</a></li><li class="lvl-2"><a href="#step-7-run-an-ambitious-long-horizon-task">Step 7: Run an ambitious, long-horizon task</a></li><li class="lvl-2"><a href="#tips-for-best-results">Tips for best results</a></li><li class="lvl-2"><a href="#troubleshooting">Troubleshooting</a></li><li class="lvl-2"><a href="#where-to-go-next">Where to go next</a></li>
+        <li class="lvl-2"><a href="#what-munder-difflin-does-best">What Munder Difflin does best</a></li><li class="lvl-2"><a href="#step-1-what-youll-need">Step 1: What you’ll need</a></li><li class="lvl-2"><a href="#step-2-install-it">Step 2: Install it</a></li><li class="lvl-3"><a href="#option-a-download-a-build-easiest">Option A — Download a build (easiest)</a></li><li class="lvl-3"><a href="#option-b-build-from-source-two-commands">Option B — Build from source (two commands)</a></li><li class="lvl-2"><a href="#step-3-first-launch-the-onboarding-wizard">Step 3: First launch — the onboarding wizard</a></li><li class="lvl-2"><a href="#step-4-meet-michael-your-god-orchestrator">Step 4: Meet Michael, your GOD orchestrator</a></li><li class="lvl-2"><a href="#step-5-understand-auto-mode">Step 5: Understand auto mode</a></li><li class="lvl-2"><a href="#step-6-spin-up-your-first-agent">Step 6: Spin up your first agent</a></li><li class="lvl-2"><a href="#step-7-run-an-ambitious-long-horizon-task">Step 7: Run an ambitious, long-horizon task</a></li><li class="lvl-2"><a href="#step-8-use-michaels-command-center">Step 8: Use Michael’s Command Center</a></li><li class="lvl-2"><a href="#tips-for-best-results">Tips for best results</a></li><li class="lvl-2"><a href="#troubleshooting">Troubleshooting</a></li><li class="lvl-2"><a href="#where-to-go-next">Where to go next</a></li>
       </ol>
     </aside>
     
