@@ -12,7 +12,7 @@ import {
   getBranch, getStatus, getLog, getBranches, getAheadBehind, isRepo,
   addWorktree, removeWorktree
 } from './git';
-import { HiveManager, type AgentMeta, type HiveMessage } from './hive';
+import { HiveManager, type AgentMeta, type HiveMessage, type HiveTask } from './hive';
 import { HookServer } from './hooks';
 import { MemoryManager } from './memory';
 import { enrichMessage } from './assistant';
@@ -274,6 +274,10 @@ ipcMain.handle('hive:send', (_evt, partial: Partial<HiveMessage>, from: unknown)
   if (!hive.enabled()) return { ok: false, error: 'hive disabled (no harnessHome)' };
   const msg = hive.send(partial ?? {}, typeof from === 'string' ? from : 'system');
   return { ok: true, message: msg };
+});
+ipcMain.handle('hive:writeTasks', (_evt, tasks) => {
+  hive.writeTasks(tasks as HiveTask[]);
+  return { ok: true };
 });
 
 // ─── IPC: enrichment assistant (headless Sonnet 1M prompt prep) ─────────────
