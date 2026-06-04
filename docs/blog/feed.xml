@@ -152,6 +152,22 @@
     <summary>How local-first AI agent orchestration works under the hood — the loop, mailboxes, scheduler, and audit log that coordinate a hive on one machine.</summary>
   </entry>
   <entry>
+    <title>Local-First vs Cloud Agent SDKs: Which Wins in 2026?</title>
+    <link href="https://munderdiffl.in/blog/local-first-vs-cloud-agent-sdks/" />
+    <id>https://munderdiffl.in/blog/local-first-vs-cloud-agent-sdks/</id>
+    <published>2026-06-04T00:00:00.000Z</published>
+    <updated>2026-06-04T00:00:00.000Z</updated><category term="Comparisons" />
+    <summary>Local-first agent hives vs the 2026 cloud agent SDK wave (OpenAI, Google ADK, Microsoft, MCP/A2A): what each optimizes for, and when to pick which.</summary>
+  </entry>
+  <entry>
+    <title>Long-Running Agents: The 2026 Shift from Minutes to Hours</title>
+    <link href="https://munderdiffl.in/blog/long-running-agents-the-2026-shift/" />
+    <id>https://munderdiffl.in/blog/long-running-agents-the-2026-shift/</id>
+    <published>2026-06-04T00:00:00.000Z</published>
+    <updated>2026-06-04T00:00:00.000Z</updated><category term="Concepts" />
+    <summary>Agents used to answer in seconds; now they run for hours. The data behind the shift — and why a longer agent is a different problem, not just a bigger one.</summary>
+  </entry>
+  <entry>
     <title>Building AI Dev Tools in the Open, On Purpose</title>
     <link href="https://munderdiffl.in/blog/open-source-ai-tools-on-purpose/" />
     <id>https://munderdiffl.in/blog/open-source-ai-tools-on-purpose/</id>
@@ -176,6 +192,14 @@
     <summary>An agent re-sends the same prompt, tools, and context every turn. Prompt caching makes you pay for that prefix once — here&#39;s how to design for it.</summary>
   </entry>
   <entry>
+    <title>Recovering From Agent Failures: Resilience Patterns for a Hive</title>
+    <link href="https://munderdiffl.in/blog/recovering-from-agent-failures/" />
+    <id>https://munderdiffl.in/blog/recovering-from-agent-failures/</id>
+    <published>2026-06-04T00:00:00.000Z</published>
+    <updated>2026-06-04T00:00:00.000Z</updated><category term="Internals" />
+    <summary>How multi-agent systems survive partial failure: retry with stale-lock recovery, poison-message quarantine, hop-cap circuit breaking, idempotent handling.</summary>
+  </entry>
+  <entry>
     <title>Make a Hive Work While You Sleep: Scheduling Autonomous Agent Missions</title>
     <link href="https://munderdiffl.in/blog/scheduling-autonomous-agent-missions/" />
     <id>https://munderdiffl.in/blog/scheduling-autonomous-agent-missions/</id>
@@ -198,6 +222,14 @@
     <published>2026-06-04T00:00:00.000Z</published>
     <updated>2026-06-04T00:00:00.000Z</updated><category term="Guides" />
     <summary>How a small team adopts a hive of AI coding agents without chaos — the roles to assign, the cadence to run, and the guardrails that keep it safe.</summary>
+  </entry>
+  <entry>
+    <title>The Hook Shim Pattern: Wiring Agent Hooks to a Live Process</title>
+    <link href="https://munderdiffl.in/blog/the-hook-shim-pattern/" />
+    <id>https://munderdiffl.in/blog/the-hook-shim-pattern/</id>
+    <published>2026-06-04T00:00:00.000Z</published>
+    <updated>2026-06-04T00:00:00.000Z</updated><category term="Internals" />
+    <summary>How a tiny shim bridges Claude Code&#39;s lifecycle hooks to one live process over a Unix socket, turning per-event hooks into a telemetry and control channel.</summary>
   </entry>
   <entry>
     <title>The Office Parody Behind Munder Difflin (and Why It Helps)</title>
@@ -454,37 +486,5 @@
     <published>2026-05-27T00:00:00.000Z</published>
     <updated>2026-05-27T00:00:00.000Z</updated><category term="Memory" />
     <summary>Claude Code forgets between sessions. Here&#39;s how a markdown-first memory layer with semantic recall lets your agents remember across runs.</summary>
-  </entry>
-  <entry>
-    <title>Why We Built Agent Memory Markdown-First</title>
-    <link href="https://munderdiffl.in/blog/markdown-first-agent-memory/" />
-    <id>https://munderdiffl.in/blog/markdown-first-agent-memory/</id>
-    <published>2026-05-27T00:00:00.000Z</published>
-    <updated>2026-05-27T00:00:00.000Z</updated><category term="Memory" />
-    <summary>Markdown-first AI agent long-term memory: plain notes a human can read and git can diff, with a semantic index on top that degrades gracefully.</summary>
-  </entry>
-  <entry>
-    <title>Semantic Memory for AI Agents: Recall in Milliseconds</title>
-    <link href="https://munderdiffl.in/blog/semantic-memory-for-ai-agents/" />
-    <id>https://munderdiffl.in/blog/semantic-memory-for-ai-agents/</id>
-    <published>2026-05-26T00:00:00.000Z</published>
-    <updated>2026-05-26T00:00:00.000Z</updated><category term="Memory" />
-    <summary>What semantic memory for AI agents is, why a markdown-first store beats a heavy DB, and how a shared palace lets a hive recall a note by meaning, fast.</summary>
-  </entry>
-  <entry>
-    <title>How to Manage Multiple Claude Code Sessions Like a Pro</title>
-    <link href="https://munderdiffl.in/blog/manage-multiple-claude-code-sessions/" />
-    <id>https://munderdiffl.in/blog/manage-multiple-claude-code-sessions/</id>
-    <published>2026-05-25T00:00:00.000Z</published>
-    <updated>2026-05-25T00:00:00.000Z</updated><category term="Guides" />
-    <summary>Tactics to manage multiple Claude Code sessions without losing track: naming, roles, context isolation, and when a harness beats juggling terminal tabs.</summary>
-  </entry>
-  <entry>
-    <title>Set Up a Claude Code Multi-Agent Workflow in 10 Minutes</title>
-    <link href="https://munderdiffl.in/blog/claude-code-multi-agent-setup-tutorial/" />
-    <id>https://munderdiffl.in/blog/claude-code-multi-agent-setup-tutorial/</id>
-    <published>2026-05-24T00:00:00.000Z</published>
-    <updated>2026-05-24T00:00:00.000Z</updated><category term="Guides" />
-    <summary>A from-zero Claude Code multi-agent setup: install Munder Difflin, onboard, spawn a few agents, and watch the GOD orchestrator route your first task.</summary>
   </entry>
 </feed>
