@@ -35,6 +35,16 @@ function shortId(): string {
   return `t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+/** Deterministic fallback id derived from a task's content (djb2 → base36).
+ *  Used for tasks lacking a valid string id so re-parsing tasks.json on every
+ *  5s poll yields the SAME id — no React key churn / card remount. Unlike
+ *  shortId() (random, for brand-new tasks), this never changes across polls. */
+function stableId(seed: string): string {
+  let h = 5381;
+  for (let i = 0; i < seed.length; i++) h = (((h << 5) + h) ^ seed.charCodeAt(i)) | 0;
+  return `t-${(h >>> 0).toString(36)}`;
+}
+
 /** Normalize whatever hive:tasks returns into a typed task array. */
 function parseTasks(raw: unknown): HiveTask[] {
   const list = (raw && typeof raw === 'object' && Array.isArray((raw as { tasks?: unknown }).tasks))
@@ -42,8 +52,10 @@ function parseTasks(raw: unknown): HiveTask[] {
     : [];
   return list
     .filter((t): t is Record<string, unknown> => !!t && typeof t === 'object')
-    .map((t) => ({
-      id: typeof t.id === 'string' ? t.id : shortId(),
+    .map((t, i) => ({
+      id: typeof t.id === 'string' && t.id
+        ? t.id
+        : stableId(`${typeof t.title === 'string' ? t.title : ''}|${typeof t.createdAt === 'string' ? t.createdAt : ''}|${i}`),
       title: typeof t.title === 'string' ? t.title : '(untitled)',
       description: typeof t.description === 'string' ? t.description : undefined,
       assignee: typeof t.assignee === 'string' ? t.assignee : undefined,

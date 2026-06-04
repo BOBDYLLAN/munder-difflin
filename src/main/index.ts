@@ -382,7 +382,9 @@ ipcMain.handle('hive:send', (_evt, partial: Partial<HiveMessage>, from: unknown)
   const msg = hive.send(partial ?? {}, typeof from === 'string' ? from : 'system');
   return { ok: true, message: msg };
 });
-ipcMain.handle('hive:writeTasks', (_evt, tasks) => {
+ipcMain.handle('hive:writeTasks', (_evt, tasks: unknown) => {
+  if (!Array.isArray(tasks)) return { ok: false, error: 'invalid tasks' };
+  if (!hive.enabled()) return { ok: false, error: 'hive disabled (no harnessHome)' };
   hive.writeTasks(tasks as HiveTask[]);
   return { ok: true };
 });
