@@ -258,6 +258,9 @@ Shipped in **v0.2.0**:
 
 Next up:
 
+- [ ] **Chat integrations** — Slack and Telegram bridges that pipe a channel straight into Michael's queue (and route his replies back out), so you can run the floor from your phone.
+- [ ] **Pluggable agent CLIs** — run the harness over coding-agent CLIs beyond Claude Code: Claw Code, opencode, and Codex CLI.
+- [ ] **Realtime Michael** — a low-latency realtime LLM channel for quick, snappy back-and-forth with the orchestrator, alongside the async terminal.
 - [ ] **Fuller avatar coverage** — push the remaining station visits and tool-bubbles to be driven 100% by real Claude Code hook events.
 - [ ] **Durable layout & command history** — extend persistence to agent layout and per-session command history.
 
