@@ -228,7 +228,7 @@ export function App() {
         </div>
       </div>
 
-      <AgentStrip />
+      <AgentStrip config={config} />
 
       {addAgentOpen && (
         <AddAgentModal onClose={() => setAddAgentOpen(false)} config={config} />
