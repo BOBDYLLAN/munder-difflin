@@ -163,7 +163,24 @@ export function PtyTerminalView({ ptyId, onStreamData, onUserPrompt, onToggleFul
         entry.term.refresh(0, Math.max(0, entry.term.rows - 1));
       } catch { /* host may not be sized yet */ }
       if (scrollToEnd) {
-        try { entry.term.scrollToBottom(); } catch { /* noop */ }
+        try {
+          // Re-parenting the pooled terminal resets the DOM viewport's
+          // scrollTop to 0 while xterm's internal scroll state stays at the
+          // bottom — the screen still LOOKS right, but the user's first wheel
+          // reads the stale scrollTop≈0 and yanks the view to the top of
+          // history. A bare scrollToBottom() can't repair this (the buffer is
+          // already at the bottom internally → no state change → no viewport
+          // re-sync). Writing the DOM scrollTop from out here is no good
+          // either: it races with xterm's ignore-next-scroll-event flag
+          // (scroll events coalesce), which can leave the scrollbar pinned at
+          // max while the buffer sits ABOVE the bottom — then wheeling down is
+          // dead (scrollTop can't exceed max → no event → no re-sync).
+          // Instead force a REAL position change through xterm's own state
+          // machine: one line up, then back to the bottom. Its Viewport then
+          // re-syncs the DOM scrollTop itself, atomically with its flag.
+          entry.term.scrollLines(-1);
+          entry.term.scrollToBottom();
+        } catch { /* noop */ }
       }
     };
     // Fit once layout has settled and again once the web font has loaded —
